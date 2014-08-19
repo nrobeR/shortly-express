@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var crypto = require('crypto');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -119,8 +119,24 @@ function(req,res){
   var username = req.body.username;
   var password = req.body.password;
   console.log('username', username, 'password', password);
-  Users.reset().fetch().then(function(users) {
-    console.log(users.models[0]);
+  // Users.reset().fetch().then(function(users) {
+  //   console.log(users.models[0]);
+  // });
+
+  new User({ username: username }).fetch().then(function(found) {
+    if(found) {
+      var shasum = crypto.createHash('sha1');
+      shasum.update(password);
+      var sentPassword = shasum.digest('hex');
+
+      if(found.attributes.password === sentPassword) {
+        res.redirect('/index');
+      } else {
+        res.send('Wrong password!');
+      }
+    }else{
+      res.send('Username does not exist!');
+    }
   });
 });
 
