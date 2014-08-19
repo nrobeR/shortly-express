@@ -127,8 +127,12 @@ function(req,res){
 
       user.save().then(function(newUser) {
         Users.add(newUser);
-        res.send(200, 'Your account, ' + username + ', has been created.');
+        req.session.regenerate(function(){
+          req.session.user = username;
+          res.redirect('/');
+        });
       });
+
     }
   });
 
@@ -156,7 +160,7 @@ function(req,res){
         res.send('Wrong password!');
       }
     } else {
-      res.send('Username does not exist!');
+      res.redirect('/login');
     }
   });
 });

@@ -13,7 +13,7 @@ var Link = require('../app/models/link');
 // Remove the 'x' from beforeEach block when working on
 // authentication tests.
 /************************************************************/
-var beforeEach = function(){};
+var xbeforeEach = function(){};
 /************************************************************/
 
 
@@ -155,6 +155,7 @@ describe('', function() {
 
       beforeEach(function(done){
         // save a link to the database
+        console.log('beforeach!!!!!');
         link = new Link({
           url: 'http://www.roflzoo.com/',
           title: 'Rofl Zoo - Daily funny animal pictures',
@@ -176,6 +177,8 @@ describe('', function() {
         };
 
         requestWithSession(options, function(error, res, body) {
+          console.log('res.body.code', res.body.code);
+          console.log('link',link);
           var code = res.body.code;
           expect(code).to.equal(link.get('code'));
           done();
