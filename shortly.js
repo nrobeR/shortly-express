@@ -3,6 +3,8 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
+var session = require('express-session');
+var cookieParser = require('cookie-parser');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -20,20 +22,30 @@ app.use(partials());
 app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser('Secret'));
+app.use(session());
 app.use(express.static(__dirname + '/public'));
 
+var checkUser = function(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    req.session.error = 'Access denied!';
+    res.redirect('/login');
+  }
+};
 
-app.get('/',
+app.get('/', checkUser,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create',
+app.get('/create', checkUser,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links',
+app.get('/links', checkUser,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -89,6 +101,14 @@ function(req, res) {
   res.render('signup');
 });
 
+app.get('/logout',
+function(req, res) {
+  req.session.destroy(function() {
+    res.send('Logged out');
+    // res.redirect('/');
+  });
+});
+
 app.post('/signup',
 function(req,res){
   // console.log('signup req.body:', req.body);
@@ -119,9 +139,6 @@ function(req,res){
   var username = req.body.username;
   var password = req.body.password;
   console.log('username', username, 'password', password);
-  // Users.reset().fetch().then(function(users) {
-  //   console.log(users.models[0]);
-  // });
 
   new User({ username: username }).fetch().then(function(found) {
     if(found) {
@@ -130,11 +147,15 @@ function(req,res){
       var sentPassword = shasum.digest('hex');
 
       if(found.attributes.password === sentPassword) {
-        res.redirect('/index');
+        req.session.regenerate(function(){
+          req.session.user = username;
+          res.redirect('/');
+        });
+        // res.redirect('/index');
       } else {
         res.send('Wrong password!');
       }
-    }else{
+    } else {
       res.send('Username does not exist!');
     }
   });
